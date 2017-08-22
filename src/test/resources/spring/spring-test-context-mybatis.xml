@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	   xmlns:context="http://www.springframework.org/schema/context" xmlns:p="http://www.springframework.org/schema/p"
+	   xmlns:aop="http://www.springframework.org/schema/aop" xmlns:tx="http://www.springframework.org/schema/tx"
+	   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	   xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
+	http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.0.xsd
+	http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.0.xsd http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.0.xsd
+	http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-4.0.xsd">
+
+	<!-- 重写加载配置文件方法，读取环境变量里面配置的文件 -->
+	<bean id="propertyConfigurer" class="com.ikcrm.lib.common.common.ConvertFilePathPropertyConfigurer"/>
+
+	<bean id="serviceEnv" class="com.ikcrm.api.common.ServiceEnv">
+		<property name="contact_base_url" value="${contact_base_url}"></property>
+		<property name="customer_base_url" value="${customer_base_url}"></property>
+	</bean>
+
+	<!-- 数据库连接池 -->
+	<bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource" init-method="init" destroy-method="close">
+		<property name="url" value="${jdbc.url}" />
+		<property name="username" value="${jdbc.username}" />
+		<property name="password" value="${jdbc.password}" />
+		<property name="driverClassName" value="${jdbc.driver}" />
+		<property name="filters" value="stat" />
+		<property name="maxActive" value="100" />
+		<property name="initialSize" value="1" />
+		<property name="minIdle" value="1" />
+
+		<!-- 		<property name="maxActive" value="100" /> -->
+		<!-- 		<property name="minIdle" value="50" /> -->
+	</bean>
+	<!-- 配置sqlsessionFactory -->
+	<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<!-- <property name="configLocation" value="classpath:SqlMapConfig.xml"></property> -->
+		<!-- <property name="configLocation" value="classpath:mybatis-config.xml"
+			/> -->
+		<property name="dataSource" ref="dataSource"></property>
+		<property name="mapperLocations" value="classpath*:/mappers/*.xml" />
+		<property name="typeAliasesPackage" value="com.isea533.mybatis.model" />
+		<property name="plugins">
+			<array>
+				<bean class="com.github.pagehelper.PageHelper">
+					<!-- 这里的几个配置主要演示如何使用，如果不理解，一定要去掉下面的配置 -->
+					<property name="properties">
+						<value>
+							dialect=mysql
+							reasonable=true
+							supportMethodsArguments=true
+							params=count=countSql
+							autoRuntimeDialect=true
+						</value>
+					</property>
+				</bean>
+			</array>
+		</property>
+	</bean>
+
+	<!-- 事务管理器 -->
+	<bean id="transactionManager"
+		  class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<!-- 数据源 -->
+		<property name="dataSource" ref="dataSource" />
+		<property name="globalRollbackOnParticipationFailure" value="false" />
+	</bean>
+	<!-- 连接事务的注解配置 -->
+	<tx:annotation-driven transaction-manager="transactionManager" />
+
+	<bean class="tk.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="basePackage" value="com.ikcrm.api.dao;com.ikcrm.lib.common.dao" />
+		<!-- 3.2.2版本新特性，markerInterface可以起到mappers配置的作用，详细情况需要看Marker接口类 -->
+		<property name="markerInterface" value="com.ikcrm.lib.common.dao.db.IBaseMapper" />
+		<!-- 通用Mapper通过属性注入进行配置，默认不配置时会注册Mapper<T>接口 <property name="properties">
+			<value> mappers=tk.mybatis.mapper.common.Mapper </value> </property> -->
+	</bean>
+
+	<!-- 配置扫描包，加载mapper代理对象 -->
+	<!-- 	<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer"> -->
+
+	<!-- 		<property name="sqlSessionFactoryBeanName" value="sqlSessionFactory" /> -->
+	<!-- 		<property name="basePackage" value="com.mwclg.ltd.datastatistic.dao" /> -->
+	<!-- 		<property name="annotationClass" value="com.mwclg.ltd.common.db.MyBatisDao" /> -->
+	<!-- 	</bean> -->
+</beans>
